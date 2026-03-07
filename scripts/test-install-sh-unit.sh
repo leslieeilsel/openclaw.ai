@@ -510,6 +510,26 @@ echo "==> case: install_openclaw_from_git (deps step uses run_pnpm function)"
   assert_eq "$deps_cmd" "run_pnpm" "install_openclaw_from_git dependencies command"
 )
 
+echo "==> case: ensure_pnpm_git_prepare_allowlist (known dep added once)"
+(
+  root="${TMP_DIR}/case-pnpm-git-prepare-allowlist"
+  repo="${root}/repo"
+  mkdir -p "${repo}"
+  cat >"${repo}/pnpm-workspace.yaml" <<'EOF'
+packages:
+  - .
+
+onlyBuiltDependencies:
+  - esbuild
+EOF
+
+  ensure_pnpm_git_prepare_allowlist "${repo}"
+  ensure_pnpm_git_prepare_allowlist "${repo}"
+
+  count="$(grep -c '@tloncorp/api' "${repo}/pnpm-workspace.yaml" || true)"
+  assert_eq "$count" "1" "ensure_pnpm_git_prepare_allowlist count"
+)
+
 echo "==> case: install_openclaw_compat_shim (always uses user-local bin)"
 (
   root="${TMP_DIR}/case-openclaw-compat-shim"

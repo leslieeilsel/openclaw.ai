@@ -2000,6 +2000,7 @@ install_openclaw_from_git() {
     fi
 
     cleanup_legacy_submodules "$repo_dir"
+    ensure_pnpm_git_prepare_allowlist "$repo_dir"
 
     SHARP_IGNORE_GLOBAL_LIBVIPS="$SHARP_IGNORE_GLOBAL_LIBVIPS" run_quiet_step "Installing dependencies" run_pnpm -C "$repo_dir" install
 
@@ -2018,6 +2019,40 @@ EOF
     chmod +x "$HOME/.local/bin/openclaw"
     ui_success "OpenClaw wrapper installed to \$HOME/.local/bin/openclaw"
     ui_info "This checkout uses pnpm — run pnpm install (or corepack pnpm install) for deps"
+}
+
+ensure_pnpm_git_prepare_allowlist() {
+    local repo_dir="$1"
+    local workspace_file="${repo_dir}/pnpm-workspace.yaml"
+    local dep="@tloncorp/api"
+    local tmp=""
+
+    if [[ ! -f "$workspace_file" ]]; then
+        return 0
+    fi
+
+    if grep -Fq "\"${dep}\"" "$workspace_file" || grep -Fq -- "- ${dep}" "$workspace_file"; then
+        return 0
+    fi
+
+    tmp="$(mktemp)"
+    if grep -q '^onlyBuiltDependencies:[[:space:]]*$' "$workspace_file"; then
+        awk -v dep="$dep" '
+      BEGIN { inserted = 0 }
+      {
+        print
+        if (!inserted && $0 ~ /^onlyBuiltDependencies:[[:space:]]*$/) {
+          print "  - \"" dep "\""
+          inserted = 1
+        }
+      }
+    ' "$workspace_file" >"$tmp"
+    else
+        cat "$workspace_file" >"$tmp"
+        printf '\nonlyBuiltDependencies:\n  - "%s"\n' "$dep" >>"$tmp"
+    fi
+    mv "$tmp" "$workspace_file"
+    ui_info "Updated pnpm allowlist for git-hosted build dependency: ${dep}"
 }
 
 # Install OpenClaw

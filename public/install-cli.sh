@@ -15,6 +15,7 @@ GIT_UPDATE="${OPENCLAW_GIT_UPDATE:-1}"
 JSON=0
 RUN_ONBOARD=0
 SET_NPM_PREFIX=0
+PNPM_CMD=()
 
 print_usage() {
   cat <<EOF
@@ -280,6 +281,64 @@ npm_bin() {
   echo "$(node_dir)/bin/npm"
 }
 
+set_pnpm_cmd() {
+  PNPM_CMD=("$@")
+}
+
+pnpm_cmd_is_ready() {
+  if [[ ${#PNPM_CMD[@]} -eq 0 ]]; then
+    return 1
+  fi
+  "${PNPM_CMD[@]}" --version >/dev/null 2>&1
+}
+
+detect_pnpm_cmd() {
+  if [[ -x "${PREFIX}/bin/pnpm" ]]; then
+    set_pnpm_cmd "${PREFIX}/bin/pnpm"
+    return 0
+  fi
+  if command -v pnpm >/dev/null 2>&1; then
+    set_pnpm_cmd pnpm
+    return 0
+  fi
+  if [[ -x "$(node_dir)/bin/corepack" ]] && "$(node_dir)/bin/corepack" pnpm --version >/dev/null 2>&1; then
+    set_pnpm_cmd "$(node_dir)/bin/corepack" pnpm
+    return 0
+  fi
+  return 1
+}
+
+ensure_pnpm_binary_for_scripts() {
+  if command -v pnpm >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ ${#PNPM_CMD[@]} -eq 2 && "${PNPM_CMD[1]}" == "pnpm" ]] && [[ "$(basename "${PNPM_CMD[0]}")" == "corepack" ]]; then
+    mkdir -p "${PREFIX}/bin"
+    cat > "${PREFIX}/bin/pnpm" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+exec "${PNPM_CMD[0]}" pnpm "\$@"
+EOF
+    chmod +x "${PREFIX}/bin/pnpm"
+    export PATH="${PREFIX}/bin:${PATH}"
+    hash -r 2>/dev/null || true
+  fi
+
+  if command -v pnpm >/dev/null 2>&1; then
+    return 0
+  fi
+
+  fail "pnpm command not available on PATH"
+}
+
+run_pnpm() {
+  if ! pnpm_cmd_is_ready; then
+    ensure_pnpm
+  fi
+  "${PNPM_CMD[@]}" "$@"
+}
+
 install_node() {
   local os
   local arch
@@ -342,9 +401,9 @@ install_node() {
 }
 
 ensure_pnpm() {
-  if command -v pnpm >/dev/null 2>&1; then
+  if detect_pnpm_cmd && pnpm_cmd_is_ready; then
     local current_version
-    current_version="$(pnpm --version 2>/dev/null || true)"
+    current_version="$("${PNPM_CMD[@]}" --version 2>/dev/null || true)"
     if [[ "$current_version" =~ ^10\. ]]; then
       return 0
     fi
@@ -356,7 +415,7 @@ ensure_pnpm() {
     log "Installing pnpm via Corepack..."
     "$(node_dir)/bin/corepack" enable >/dev/null 2>&1 || true
     "$(node_dir)/bin/corepack" prepare pnpm@10 --activate
-    if command -v pnpm >/dev/null 2>&1 && [[ "$(pnpm --version 2>/dev/null || true)" =~ ^10\. ]]; then
+    if detect_pnpm_cmd && pnpm_cmd_is_ready && [[ "$("${PNPM_CMD[@]}" --version 2>/dev/null || true)" =~ ^10\. ]]; then
       emit_json "{\"event\":\"step\",\"name\":\"pnpm\",\"status\":\"ok\"}"
       return 0
     fi
@@ -365,6 +424,7 @@ ensure_pnpm() {
   emit_json "{\"event\":\"step\",\"name\":\"pnpm\",\"status\":\"start\",\"method\":\"npm\"}"
   log "Installing pnpm via npm..."
   SHARP_IGNORE_GLOBAL_LIBVIPS="$SHARP_IGNORE_GLOBAL_LIBVIPS" "$(npm_bin)" install -g --prefix "$PREFIX" pnpm@10
+  detect_pnpm_cmd || true
   emit_json "{\"event\":\"step\",\"name\":\"pnpm\",\"status\":\"ok\"}"
   return 0
 }
@@ -435,6 +495,40 @@ EOF
   emit_json "{\"event\":\"step\",\"name\":\"openclaw\",\"status\":\"ok\",\"version\":\"${requested}\"}"
 }
 
+ensure_pnpm_git_prepare_allowlist() {
+  local repo_dir="$1"
+  local workspace_file="${repo_dir}/pnpm-workspace.yaml"
+  local dep="@tloncorp/api"
+  local tmp
+
+  if [[ ! -f "$workspace_file" ]]; then
+    return 0
+  fi
+
+  if grep -Fq "\"${dep}\"" "$workspace_file" || grep -Fq -- "- ${dep}" "$workspace_file"; then
+    return 0
+  fi
+
+  tmp="$(mktemp)"
+  if grep -q '^onlyBuiltDependencies:[[:space:]]*$' "$workspace_file"; then
+    awk -v dep="$dep" '
+      BEGIN { inserted = 0 }
+      {
+        print
+        if (!inserted && $0 ~ /^onlyBuiltDependencies:[[:space:]]*$/) {
+          print "  - \"" dep "\""
+          inserted = 1
+        }
+      }
+    ' "$workspace_file" >"$tmp"
+  else
+    cat "$workspace_file" >"$tmp"
+    printf '\nonlyBuiltDependencies:\n  - "%s"\n' "$dep" >>"$tmp"
+  fi
+  mv "$tmp" "$workspace_file"
+  log "Updated pnpm allowlist for git-hosted build dependency: ${dep}"
+}
+
 install_openclaw_from_git() {
   local repo_dir="$1"
   local repo_url="https://github.com/openclaw/openclaw.git"
@@ -457,6 +551,7 @@ install_openclaw_from_git() {
 
   ensure_git
   ensure_pnpm
+  ensure_pnpm_binary_for_scripts
 
   if [[ -d "$repo_dir/.git" ]]; then
     :
@@ -479,13 +574,14 @@ install_openclaw_from_git() {
   fi
 
   cleanup_legacy_submodules "$repo_dir"
+  ensure_pnpm_git_prepare_allowlist "$repo_dir"
 
-  SHARP_IGNORE_GLOBAL_LIBVIPS="$SHARP_IGNORE_GLOBAL_LIBVIPS" pnpm -C "$repo_dir" install
+  SHARP_IGNORE_GLOBAL_LIBVIPS="$SHARP_IGNORE_GLOBAL_LIBVIPS" run_pnpm -C "$repo_dir" install
 
-  if ! pnpm -C "$repo_dir" ui:build; then
+  if ! run_pnpm -C "$repo_dir" ui:build; then
     log "UI build failed; continuing (CLI may still work)"
   fi
-  pnpm -C "$repo_dir" build
+  run_pnpm -C "$repo_dir" build
 
   mkdir -p "${PREFIX}/bin"
   cat > "${PREFIX}/bin/openclaw" <<EOF
@@ -602,4 +698,6 @@ main() {
   fi
 }
 
-main "$@"
+if [[ "${OPENCLAW_INSTALL_CLI_SH_NO_RUN:-0}" != "1" ]]; then
+  main "$@"
+fi

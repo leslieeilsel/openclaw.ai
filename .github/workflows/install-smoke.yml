@@ -55,6 +55,9 @@ jobs:
       - name: Unit tests (install.sh)
         run: bash scripts/test-install-sh-unit.sh
 
+      - name: Unit tests (install-cli.sh)
+        run: bash scripts/test-install-cli-unit.sh
+
   install-smoke:
     runs-on: ubuntu-latest
     steps:
