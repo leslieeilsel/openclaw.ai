@@ -13,5 +13,9 @@ docker run --rm -t "$IMAGE_NAME" bash -lc '
   install_prefix="/tmp/clawdbot"
   /app/public/install-cli.sh --json --no-onboard --prefix "$install_prefix" > /tmp/install.jsonl
   grep "\"event\":\"done\"" /tmp/install.jsonl
-  "$install_prefix/bin/clawdbot" --version
+  if [[ -x "$install_prefix/bin/openclaw" ]]; then
+    "$install_prefix/bin/openclaw" --version
+  else
+    "$install_prefix/bin/clawdbot" --version
+  fi
 '

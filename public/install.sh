@@ -576,10 +576,10 @@ install_build_tools_linux() {
     if command -v apt-get &> /dev/null; then
         if is_root; then
             run_quiet_step "Updating package index" apt-get update -qq
-            run_quiet_step "Installing build tools" apt-get install -y -qq build-essential python3 make g++ cmake
+            run_quiet_step "Installing build tools" env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq build-essential python3 make g++ cmake
         else
             run_quiet_step "Updating package index" sudo apt-get update -qq
-            run_quiet_step "Installing build tools" sudo apt-get install -y -qq build-essential python3 make g++ cmake
+            run_quiet_step "Installing build tools" sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq build-essential python3 make g++ cmake
         fi
         return 0
     fi
