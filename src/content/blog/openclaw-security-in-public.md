@@ -6,12 +6,11 @@ author: "Peter Steinberger"
 authorHandle: "steipete"
 draft: false
 tags: ["security", "open-source", "nvidia", "clawhub"]
-image: "/blog/openclaw-logo-text.png"
 ---
 
 OpenClaw started on my Mac in Vienna as an experiment. A lot of people screamed it was so insecure.
 
-Open source is supposed to be the unsafe option because everyone can see the code. Sure. Great.
+Open source is supposed to be the unsafe option because everyone can see the code. Sure.
 
 People used it anyway, loved it, and now companies run it in production. Those same companies are the ones now helping us secure it. Nothing that can run tools, hold credentials and install plugins is safe by default. But being open is why we got safer quickly, in public.
 
