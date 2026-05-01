@@ -33,7 +33,7 @@ for script in "${SCRIPTS[@]}"; do
 
   main_body="$(awk '
     /^function Main \{/ { in_main = 1; next }
-    /^\$installSucceeded = Main/ { in_main = 0 }
+    /^\$mainResults = @\(Main\)/ { in_main = 0 }
     in_main { print }
   ' "$script")"
 
@@ -45,6 +45,10 @@ for script in "${SCRIPTS[@]}"; do
   require_contains "$script" 'function Complete-Install {'
   require_contains "$script" 'return (Fail-Install -Code 2)'
   require_contains "$script" 'return (Fail-Install)'
+  # shellcheck disable=SC2016
+  require_contains "$script" '$mainResults = @(Main)'
+  # shellcheck disable=SC2016
+  require_contains "$script" '$installSucceeded = $mainResults.Count -gt 0 -and $mainResults[-1] -eq $true'
   # shellcheck disable=SC2016
   require_contains "$script" 'Complete-Install -Succeeded:$installSucceeded'
   # shellcheck disable=SC2016
