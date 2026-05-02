@@ -232,7 +232,7 @@ const featuredPress = pressArticles.slice(0, 4);
             </div>
           </div>
           <div id="hackable-pnpm-content" style="display: none;">
-            <div class="code-line comment"># You clearly know what you're doing</div>
+            <div class="code-line comment"># Source checkouts are pnpm workspaces</div>
             <div class="code-line cmd">
               <span class="code-prompt">$</span>
               <span>git clone https://github.com/openclaw/openclaw.git</span>
@@ -243,16 +243,16 @@ const featuredPress = pressArticles.slice(0, 4);
             </div>
             <div class="code-line cmd">
               <span class="code-prompt">$</span>
-              <span>cd openclaw && pnpm install && pnpm run build</span>
+              <span>cd openclaw && corepack enable && pnpm install</span>
               <button class="copy-line-btn" data-cmd="build" title="Copy">
                 <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
               </button>
             </div>
-            <div class="code-line comment"># You built it, now meet it</div>
+            <div class="code-line comment"># Run from source; bundled plugins use extensions/* deps</div>
             <div class="code-line cmd">
               <span class="code-prompt">$</span>
-              <span>pnpm run openclaw onboard</span>
+              <span>pnpm openclaw onboard</span>
               <button class="copy-line-btn" data-cmd="hackable-onboard" title="Copy">
                 <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
@@ -474,8 +474,8 @@ const featuredPress = pressArticles.slice(0, 4);
           ? windowsGitCmd
           : "curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git",
         'clone': () => 'git clone https://github.com/openclaw/openclaw.git',
-        'build': () => 'cd openclaw && pnpm install && pnpm run build',
-        'hackable-onboard': () => 'pnpm run openclaw onboard',
+        'build': () => 'cd openclaw && corepack enable && pnpm install',
+        'hackable-onboard': () => 'pnpm openclaw onboard',
       };
 
       document.querySelectorAll('.copy-line-btn').forEach(btn => {
