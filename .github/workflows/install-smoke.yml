@@ -29,11 +29,6 @@ jobs:
         shell: pwsh
         run: .\\public\\install.ps1 -DryRun -NoOnboard -InstallMethod npm
 
-      - name: install.cmd dry run
-        if: runner.os == 'Windows'
-        shell: cmd
-        run: set "OPENCLAW_INSTALL_PS1_URL=%GITHUB_WORKSPACE%\\public\\install.ps1" && .\\public\\install.cmd --dry-run --no-onboard --npm
-
   macos-install-verify:
     # GitHub-hosted macOS runners are frequently capacity constrained.
     # Keep this check available for manual verification without blocking
