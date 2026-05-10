@@ -476,6 +476,40 @@ EOF
   assert_eq "$got_version" "v24.13.0" "activate_supported_node_on_path active node version"
 )
 
+echo "==> case: fix_npm_permissions creates bashrc PATH hint in fresh homes"
+(
+  root="${TMP_DIR}/case-npm-prefix-fresh-home"
+  home_dir="${root}/home"
+  events="${root}/events.log"
+  prefix="${root}/root-owned-prefix"
+  mkdir -p "${home_dir}"
+
+  export OS="linux"
+  export HOME="${home_dir}"
+  export PATH="/usr/bin:/bin"
+
+  npm() {
+    if [[ "${1:-}" == "config" && "${2:-}" == "get" && "${3:-}" == "prefix" ]]; then
+      printf '%s\n' "${prefix}"
+      return 0
+    fi
+    if [[ "${1:-}" == "config" && "${2:-}" == "set" && "${3:-}" == "prefix" ]]; then
+      printf 'npm-set:%s\n' "${4:-}" >>"${events}"
+      return 0
+    fi
+    return 1
+  }
+  ui_info() { :; }
+  ui_warn() { :; }
+  ui_success() { :; }
+
+  fix_npm_permissions
+
+  assert_contains "$(cat "${home_dir}/.bashrc")" '.npm-global/bin' "fix_npm_permissions fresh bashrc"
+  got_path="${PATH%%:*}"
+  assert_eq "$got_path" "${home_dir}/.npm-global/bin" "fix_npm_permissions active PATH"
+)
+
 echo "==> case: npm diagnostics extractors"
 (
   root="${TMP_DIR}/case-npm-diagnostics"

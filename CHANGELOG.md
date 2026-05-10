@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Installer: after Linux NodeSource installs, prefer the newly installed supported Node binary when an older `/usr/local/bin/node` still shadows it on PATH.
+- Installer: when redirecting an unwritable Linux npm global prefix in a fresh home, create a `.bashrc` PATH hint so the next shell can find `openclaw`.
 
 ## 2026-05-03
 

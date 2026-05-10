@@ -1719,11 +1719,18 @@ fix_npm_permissions() {
 
     # shellcheck disable=SC2016
     local path_line='export PATH="$HOME/.npm-global/bin:$PATH"'
+    local wrote_rc=0
     for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
-        if [[ -f "$rc" ]] && ! grep -q ".npm-global" "$rc"; then
-            echo "$path_line" >> "$rc"
+        if [[ -f "$rc" ]]; then
+            if ! grep -q ".npm-global" "$rc"; then
+                echo "$path_line" >> "$rc"
+            fi
+            wrote_rc=1
         fi
     done
+    if [[ "$wrote_rc" -eq 0 ]]; then
+        printf '%s\n' "$path_line" >> "$HOME/.bashrc"
+    fi
 
     export PATH="$HOME/.npm-global/bin:$PATH"
     ui_success "npm configured for user installs"
