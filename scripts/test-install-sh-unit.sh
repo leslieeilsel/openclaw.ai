@@ -510,6 +510,49 @@ echo "==> case: fix_npm_permissions creates bashrc PATH hint in fresh homes"
   assert_eq "$got_path" "${home_dir}/.npm-global/bin" "fix_npm_permissions active PATH"
 )
 
+echo "==> case: fix_npm_permissions prepends bashrc PATH before noninteractive guard"
+(
+  root="${TMP_DIR}/case-npm-prefix-bashrc-guard"
+  home_dir="${root}/home"
+  events="${root}/events.log"
+  prefix="${root}/root-owned-prefix"
+  mkdir -p "${home_dir}"
+  cat >"${home_dir}/.bashrc" <<'EOF'
+case $- in
+  *i*) ;;
+  *) return ;;
+esac
+EOF
+
+  export OS="linux"
+  export HOME="${home_dir}"
+  export PATH="/usr/bin:/bin"
+
+  npm() {
+    if [[ "${1:-}" == "config" && "${2:-}" == "get" && "${3:-}" == "prefix" ]]; then
+      printf '%s\n' "${prefix}"
+      return 0
+    fi
+    if [[ "${1:-}" == "config" && "${2:-}" == "set" && "${3:-}" == "prefix" ]]; then
+      printf 'npm-set:%s\n' "${4:-}" >>"${events}"
+      return 0
+    fi
+    return 1
+  }
+  ui_info() { :; }
+  ui_warn() { :; }
+  ui_success() { :; }
+
+  fix_npm_permissions
+
+  first_line="$(sed -n '1p' "${home_dir}/.bashrc")"
+  assert_contains "$first_line" '.npm-global/bin' "fix_npm_permissions prepends bashrc PATH"
+  got_path="$(
+    HOME="${home_dir}" PATH="/usr/bin:/bin" bash -lc '. "$HOME/.bashrc"; printf "%s" "${PATH%%:*}"'
+  )"
+  assert_eq "$got_path" "${home_dir}/.npm-global/bin" "fix_npm_permissions guarded bashrc source PATH"
+)
+
 echo "==> case: npm diagnostics extractors"
 (
   root="${TMP_DIR}/case-npm-diagnostics"
