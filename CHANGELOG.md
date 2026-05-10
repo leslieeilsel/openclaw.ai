@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Installer: after Linux NodeSource installs, prefer the newly installed supported Node binary when an older `/usr/local/bin/node` still shadows it on PATH.
+
 ## 2026-05-03
 
 - Installer: sync `public/install.sh` with canonical `scripts/install.sh` from openclaw/openclaw, bringing progress indicators during quiet steps, progress during npm install in non-interactive `curl | bash` mode, Arch Linux support, Node version handling improvements, gum spinner fixes, and removal of legacy options. Fixes hosted installer drift (openclaw/openclaw#73837, thanks @SebTardif).

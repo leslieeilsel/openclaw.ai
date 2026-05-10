@@ -428,6 +428,54 @@ echo "==> case: ensure_macos_node22_active (fails with guidance when still old n
   assert_contains "$out" "export PATH=\"${root}/missing-node22/bin:\$PATH\"" "ensure_macos_node22_active guidance"
 )
 
+echo "==> case: activate_supported_node_on_path (prefers installed Linux node)"
+(
+  root="${TMP_DIR}/case-linux-node-path"
+  old_bin="${root}/usr-local-bin"
+  installed_bin="${root}/usr-bin"
+  mkdir -p "${old_bin}" "${installed_bin}"
+
+  cat >"${old_bin}/node" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" == "-p" ]]; then
+  echo "20 20"
+  exit 0
+fi
+if [[ "${1:-}" == "-v" ]]; then
+  echo "v20.20.0"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${old_bin}/node"
+
+  cat >"${installed_bin}/node" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" == "-p" ]]; then
+  echo "24 13"
+  exit 0
+fi
+if [[ "${1:-}" == "-v" ]]; then
+  echo "v24.13.0"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${installed_bin}/node"
+
+  export PATH="${old_bin}:${installed_bin}:/usr/bin:/bin"
+  ui_info() { :; }
+
+  activate_supported_node_on_path
+
+  got_path="$(command -v node)"
+  assert_eq "$got_path" "${installed_bin}/node" "activate_supported_node_on_path active node path"
+  got_version="$(node -v)"
+  assert_eq "$got_version" "v24.13.0" "activate_supported_node_on_path active node version"
+)
+
 echo "==> case: npm diagnostics extractors"
 (
   root="${TMP_DIR}/case-npm-diagnostics"
