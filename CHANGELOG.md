@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Integrations: point provider, platform, automation, and ClawHub cards at canonical target pages, and fix the WhatsApp docs link (#137, thanks @Tilakraj0308).
+- Shoutouts: URL-encode testimonial avatar fallbacks so contributor names cannot break the inline fallback URL (#142, thanks @SebTardif).
 - Blog: trim and tighten the "Where OpenClaw Security Is Heading" post, drop redundant status preambles, fix dangling phrasing, and add an Auto Review reference for codex users.
 - Blog: widen the article card with a solid backdrop for readability, and round evidence images while cropping their baked-in decorative frame.
 - Installer: after Linux NodeSource installs, prefer the newly installed supported Node binary when an older `/usr/local/bin/node` still shadows it on PATH.
