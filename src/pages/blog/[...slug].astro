@@ -6,7 +6,7 @@ import { getPublishedBlogPosts } from '../../lib/blog';
 export async function getStaticPaths() {
   const posts = await getPublishedBlogPosts();
   return posts.map((post) => ({
-    params: { slug: post.slug },
+    params: { slug: post.id },
     props: { post },
   }));
 }
@@ -15,12 +15,32 @@ const { post } = Astro.props;
 const { Content } = await render(post);
 
 // Normalize authors - support both legacy single author and new multi-author format
-type Author = { name: string; handle: string };
+type AuthorLink = { label: string; url: string };
+type Author = { name: string; handle?: string; url?: string; links?: AuthorLink[]; avatar?: string };
 const authors: Author[] = post.data.authors
   ? post.data.authors
-  : post.data.author && post.data.authorHandle
-    ? [{ name: post.data.author, handle: post.data.authorHandle }]
+  : post.data.author
+    ? [{
+        name: post.data.author,
+        handle: post.data.authorHandle,
+        url: post.data.authorUrl,
+        avatar: post.data.authorAvatar,
+      }]
     : [];
+
+function getAuthorAvatar(author: Author): string {
+  return author.avatar ?? (author.handle ? `https://unavatar.io/x/${author.handle}` : '/openclaw-logo-text-dark.png');
+}
+
+function getAuthorLinks(author: Author): AuthorLink[] {
+  if (author.links?.length) return author.links;
+  const url = author.url ?? (author.handle ? `https://x.com/${author.handle}` : null);
+  if (!url) return [];
+  return [{
+    label: author.handle ? `@${author.handle}` : new URL(url).hostname.replace(/^www\./, ''),
+    url,
+  }];
+}
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', {
@@ -38,7 +58,7 @@ function estimateReadTime(content: string): string {
 }
 
 const readTime = estimateReadTime(post.body || '');
-const postUrl = `https://openclaw.ai/blog/${post.slug}`;
+const postUrl = `https://openclaw.ai/blog/${post.id}`;
 ---
 
 <Layout title={`${post.data.title} — OpenClaw Blog`} description={post.data.description}>
@@ -61,14 +81,20 @@ const postUrl = `https://openclaw.ai/blog/${post.slug}`;
             {authors.map((author) => (
               <div class="author-info">
                 <img
-                  src={`https://unavatar.io/x/${author.handle}`}
+                  src={getAuthorAvatar(author)}
                   alt={author.name}
                   class="author-avatar"
                   loading="lazy"
                 />
                 <div class="author-details">
                   <span class="author-name">{author.name}</span>
-                  <a href={`https://x.com/${author.handle}`} class="author-handle" target="_blank" rel="noopener">@{author.handle}</a>
+                  {getAuthorLinks(author).length > 0 && (
+                    <div class="author-links">
+                      {getAuthorLinks(author).map((link) => (
+                        <a href={link.url} class="author-handle" target="_blank" rel="noopener">{link.label}</a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -99,12 +125,12 @@ const postUrl = `https://openclaw.ai/blog/${post.slug}`;
         </div>
 
         <div class="cta-box">
-          <h3 class="cta-title">Ready to try OpenClaw?</h3>
-          <p class="cta-text">Get started with a single command.</p>
+          <h3 class="cta-title">Download OpenClaw</h3>
+          <p class="cta-text">Choose the installer for macOS, Linux, or Windows.</p>
           <div class="cta-code">
             <code>curl -fsSL https://openclaw.ai/install.sh | bash</code>
           </div>
-          <a href="/" class="cta-btn">Learn more →</a>
+          <a href="/#quickstart" class="cta-btn">Download options →</a>
         </div>
       </footer>
     </article>
@@ -142,14 +168,8 @@ const postUrl = `https://openclaw.ai/blog/${post.slug}`;
       radial-gradient(1px 1px at 250px 150px, rgba(255,255,255,0.5), transparent),
       radial-gradient(2px 2px at 300px 40px, rgba(255,77,77,0.4), transparent);
     background-size: 350px 200px;
-    animation: twinkle 8s ease-in-out infinite alternate;
     pointer-events: none;
     z-index: 0;
-  }
-
-  @keyframes twinkle {
-    0% { opacity: 0.4; }
-    100% { opacity: 0.7; }
   }
 
   .nebula {
@@ -166,7 +186,7 @@ const postUrl = `https://openclaw.ai/blog/${post.slug}`;
   .container {
     position: relative;
     z-index: 1;
-    max-width: 720px;
+    max-width: 792px;
     margin: 0 auto;
     padding: 40px 24px;
     min-height: 100vh;
@@ -176,6 +196,17 @@ const postUrl = `https://openclaw.ai/blog/${post.slug}`;
 
   .article {
     animation: fadeInUp 0.6s ease-out;
+    background: var(--surface-card-strong);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    padding: 56px 56px 48px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  }
+
+  html[data-theme='light'] .article {
+    box-shadow: 0 16px 50px rgba(15, 23, 42, 0.08);
   }
 
   @keyframes fadeInUp {
@@ -228,7 +259,7 @@ const postUrl = `https://openclaw.ai/blog/${post.slug}`;
     gap: 16px;
     padding: 20px;
     border-radius: 12px;
-    background: var(--surface-card-strong);
+    background: var(--surface-inset-highlight);
     border: 1px solid var(--border-subtle);
   }
 
@@ -261,6 +292,12 @@ const postUrl = `https://openclaw.ai/blog/${post.slug}`;
   .author-name {
     font-weight: 600;
     color: var(--text-primary);
+  }
+
+  .author-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
   }
 
   .author-handle {
@@ -388,6 +425,32 @@ const postUrl = `https://openclaw.ai/blog/${post.slug}`;
     border-radius: 0 8px 8px 0;
     font-style: italic;
     color: var(--text-secondary);
+  }
+
+  .article-content :global(.evidence-figure) {
+    margin: 36px 0 40px;
+  }
+
+  .article-content :global(.evidence-figure img) {
+    display: block;
+    width: 100%;
+    max-height: none;
+    height: auto;
+    margin: 0;
+    object-fit: initial;
+    border-radius: 12px;
+  }
+
+  .article-content :global(.evidence-figure figcaption) {
+    margin-top: 12px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    text-align: center;
+  }
+
+  .article-content :global(.evidence-figure figcaption code) {
+    font-size: 0.86em;
   }
 
   /* Article Footer */
@@ -534,6 +597,11 @@ const postUrl = `https://openclaw.ai/blog/${post.slug}`;
   @media (max-width: 480px) {
     .container {
       padding: 24px 16px;
+    }
+
+    .article {
+      padding: 28px 22px 24px;
+      border-radius: 14px;
     }
 
     .article-meta {

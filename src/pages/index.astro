@@ -102,7 +102,7 @@ const featuredPress = pressArticles.slice(0, 4);
     <!-- Latest Blog Post -->
     {latestPost && (
       <section class="latest-post">
-        <a href={`/blog/${latestPost.slug}`} class="latest-post-card">
+        <a href={`/blog/${latestPost.id}`} class="latest-post-card">
           <span class="latest-post-badge">New</span>
           <span class="latest-post-title">{latestPost.data.title}</span>
           <span class="latest-post-link">→</span>
@@ -125,7 +125,7 @@ const featuredPress = pressArticles.slice(0, 4);
                 alt={t.author}
                 class="testimonial-avatar"
                 loading="lazy"
-                onerror={`this.src='https://ui-avatars.com/api/?name=${t.author}&background=FF4D4D&color=fff&size=88'`}
+                onerror={`this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(t.author)}&background=FF4D4D&color=fff&size=88'`}
               />
               <div class="testimonial-content">
                 <p class="testimonial-quote">"{t.quote}"</p>
@@ -142,7 +142,7 @@ const featuredPress = pressArticles.slice(0, 4);
                 alt={t.author}
                 class="testimonial-avatar"
                 loading="lazy"
-                onerror={`this.src='https://ui-avatars.com/api/?name=${t.author}&background=FF4D4D&color=fff&size=88'`}
+                onerror={`this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(t.author)}&background=FF4D4D&color=fff&size=88'`}
               />
               <div class="testimonial-content">
                 <p class="testimonial-quote">"{t.quote}"</p>
@@ -155,7 +155,7 @@ const featuredPress = pressArticles.slice(0, 4);
     </section>
 
     <!-- Quick Start -->
-    <section class="quickstart">
+    <section id="quickstart" class="quickstart">
       <SectionHeader title="Quick Start" />
       <div class="code-block">
         <div class="code-header">
@@ -232,7 +232,7 @@ const featuredPress = pressArticles.slice(0, 4);
             </div>
           </div>
           <div id="hackable-pnpm-content" style="display: none;">
-            <div class="code-line comment"># You clearly know what you're doing</div>
+            <div class="code-line comment"># Source checkouts are pnpm workspaces</div>
             <div class="code-line cmd">
               <span class="code-prompt">$</span>
               <span>git clone https://github.com/openclaw/openclaw.git</span>
@@ -243,16 +243,16 @@ const featuredPress = pressArticles.slice(0, 4);
             </div>
             <div class="code-line cmd">
               <span class="code-prompt">$</span>
-              <span>cd openclaw && pnpm install && pnpm run build</span>
+              <span>cd openclaw && corepack enable && pnpm install</span>
               <button class="copy-line-btn" data-cmd="build" title="Copy">
                 <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
               </button>
             </div>
-            <div class="code-line comment"># You built it, now meet it</div>
+            <div class="code-line comment"># Run from source; bundled plugins use extensions/* deps</div>
             <div class="code-line cmd">
               <span class="code-prompt">$</span>
-              <span>pnpm run openclaw onboard</span>
+              <span>pnpm openclaw onboard</span>
               <button class="copy-line-btn" data-cmd="hackable-onboard" title="Copy">
                 <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
@@ -279,7 +279,7 @@ const featuredPress = pressArticles.slice(0, 4);
         </div>
       </div>
       <p class="quickstart-note">
-        Works on macOS, Linux, and Windows. The one-liner installs Node.js and everything else for you.
+        Works on macOS, Linux, and Windows. The one-liner installs Node.js and everything else for you. Switch later with <code>openclaw update --channel dev</code> or <code>openclaw update --channel stable</code>.
       </p>
     </section>
 
@@ -287,6 +287,7 @@ const featuredPress = pressArticles.slice(0, 4);
       // Windows install commands
       const windowsCmd = 'powershell -c "irm https://openclaw.ai/install.ps1 | iex"';
       const windowsBetaCmd = 'powershell -c "& ([scriptblock]::Create((irm https://openclaw.ai/install.ps1))) -Tag beta"';
+      const windowsGitCmd = 'powershell -c "& ([scriptblock]::Create((irm https://openclaw.ai/install.ps1))) -InstallMethod git"';
 
       // State
       let currentPm = 'npm';
@@ -360,7 +361,9 @@ const featuredPress = pressArticles.slice(0, 4);
         }
         osCmdElements.forEach(cmd => cmd.textContent = onelinerCmd);
         // Update hackable OS command for installer mode
-        const hackableOsCmd = "curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git";
+        const hackableOsCmd = currentOs === 'windows'
+          ? windowsGitCmd
+          : "curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git";
         osCmdHackableElements.forEach(cmd => cmd.textContent = hackableOsCmd);
         // Update hackable content visibility (null-safe)
         if (currentMode === 'hackable') {
@@ -386,8 +389,8 @@ const featuredPress = pressArticles.slice(0, 4);
         if (codeHackable) codeHackable.style.display = currentMode === 'hackable' ? 'block' : 'none';
         if (codeMacos) codeMacos.style.display = currentMode === 'macos' ? 'block' : 'none';
 
-        // Show OS switch for one-liner, PM switch for quick, hackable switch for hackable, nothing for macos
-        const showOsControls = currentMode === 'oneliner';
+        // Show OS switch for one-liner and installer-backed hackable mode.
+        const showOsControls = currentMode === 'oneliner' || (currentMode === 'hackable' && currentHackable === 'installer');
         const showPmControls = currentMode === 'quick';
         const showHackableControls = currentMode === 'hackable';
         // Beta only applies to oneliner and npm modes (git always gets main branch)
@@ -424,6 +427,7 @@ const featuredPress = pressArticles.slice(0, 4);
           hackableBtns.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           updateCommands();
+          updateVisibility();
         });
       });
 
@@ -466,10 +470,12 @@ const featuredPress = pressArticles.slice(0, 4);
           return currentPm === 'npm' ? `npm i -g openclaw${betaSuffix}` : `pnpm add -g openclaw${betaSuffix}`;
         },
         'onboard': () => 'openclaw onboard',
-        'hackable-installer': () => "curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git",
+        'hackable-installer': () => currentOs === 'windows'
+          ? windowsGitCmd
+          : "curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git",
         'clone': () => 'git clone https://github.com/openclaw/openclaw.git',
-        'build': () => 'cd openclaw && pnpm install && pnpm run build',
-        'hackable-onboard': () => 'pnpm run openclaw onboard',
+        'build': () => 'cd openclaw && corepack enable && pnpm install',
+        'hackable-onboard': () => 'pnpm openclaw onboard',
       };
 
       document.querySelectorAll('.copy-line-btn').forEach(btn => {

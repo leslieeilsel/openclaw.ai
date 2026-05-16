@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+- Integrations: point provider, platform, automation, and ClawHub cards at canonical target pages, and fix the WhatsApp docs link (#137, thanks @Tilakraj0308).
+- Shoutouts: URL-encode testimonial avatar fallbacks so contributor names cannot break the inline fallback URL (#142, thanks @SebTardif).
+- Blog: trim and tighten the "Where OpenClaw Security Is Heading" post, drop redundant status preambles, fix dangling phrasing, and add an Auto Review reference for codex users.
+- Blog: widen the article card with a solid backdrop for readability, and round evidence images while cropping their baked-in decorative frame.
+- Installer: after Linux NodeSource installs, prefer the newly installed supported Node binary when an older `/usr/local/bin/node` still shadows it on PATH.
+- Installer: when redirecting an unwritable Linux npm global prefix, create or prepend the `.bashrc` PATH hint so fresh non-interactive shells can find `openclaw`.
+
+## 2026-05-03
+
+- Installer: sync `public/install.sh` with canonical `scripts/install.sh` from openclaw/openclaw, bringing progress indicators during quiet steps, progress during npm install in non-interactive `curl | bash` mode, Arch Linux support, Node version handling improvements, gum spinner fixes, and removal of legacy options. Fixes hosted installer drift (openclaw/openclaw#73837, thanks @SebTardif).
+
+## 2026-04-26
+
+- Installer: normalize `HOME` when headless VM execution reports `/`, preventing npm from trying to use `/.npm` on macOS Parallels guests.
+- Installer: keep `install-cli.sh` package installs under the prefix-local Node toolchain so `openclaw update` does not create a second package root (#118, thanks @AISymbiote).
+- Integrations: add QQ Bot to the chat provider list with the canonical docs link (#119, thanks @sliverp).
+- Integrations: point Notion, Bear Notes, GitHub, Image Gen, and Camera cards to their specific ClawHub skill pages (#117, thanks @DJStompZone).
+- Dependencies: update Astro to 6.1.9, migrate blog content to Astro 6 content collections, refresh RSS/icons/analytics packages, and bump pinned GitHub Actions.
+- Windows installer: route PowerShell install failures through a top-level handler so `irm ... | iex` returns control to the current shell while direct script-file runs still exit non-zero. Fixes openclaw/openclaw#38054, thanks @PwrSrg.
+- Installer: warn when multiple npm global roots contain OpenClaw installs, showing active Node/npm/openclaw plus each install path and version so stale version-manager installs are visible. Fixes openclaw/openclaw#40839, thanks @zhixianio.
+
 ## 2026-03-16
 
 - Integrations: correct MS Teams docs link to the canonical `/channels/msteams` path (#109, thanks @SidU).

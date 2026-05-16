@@ -48,13 +48,23 @@ The landing page hosts installer scripts:
 
 Installer UI controls (macOS/Linux `install.sh`):
 - Gum UI is auto-detected; interactive terminals get richer status output, non-interactive shells fall back to plain output automatically.
+- Windows `install.ps1` keeps `irm ... | iex` failures in the current PowerShell session while preserving non-zero exits for direct script-file automation.
 
 These scripts:
 1. Install Homebrew (macOS) or detect package managers (Windows)
 2. Install Node.js 22+ if needed
-3. Install openclaw globally via npm
+3. Install openclaw globally via npm, or from a pnpm-backed git checkout with `--install-method git`
 4. Run `openclaw doctor --non-interactive` for migrations (upgrades only)
 5. Prompt to run `openclaw onboard` (new installs)
+
+Switching after install:
+- npm package to git checkout: `openclaw update --channel dev`
+- git checkout to npm package: `openclaw update --channel stable`
+- installer-forced switch: rerun the installer with `--install-method git` or `--install-method npm`
+
+Source checkouts use the OpenClaw pnpm workspace. Keep hackable/dev-channel copy
+pointing at `pnpm install`; root `npm install` is for packaged installs, not
+source trees.
 
 Troubleshooting:
 - macOS first-run Homebrew bootstrap needs an Administrator account. If install fails with a sudo/admin error, use an admin account (or add the current user to the `admin` group) and rerun the installer.
